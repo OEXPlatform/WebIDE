@@ -13,9 +13,15 @@ export default class ContractEditor extends Component {
     super(props);
     //const oexchainsol = require('solc');
     //solc = solc.setupMethods(require("../../../../utils/soljson.js"));
-    const solCode = global.localStorage.getItem('sol:' + props.fileName);
+    var code = props.constantContent;
+    if (code == null) {
+      code = global.localStorage.getItem('sol:' + props.fileName);
+    } else if (this.props.fileType == 'abi') {
+      const codeObj = JSON.parse(code);
+      code = JSON.stringify(codeObj, null, '\t');
+    }
     this.state = {
-      code: solCode,
+      code,
       editor: null,
       fileName: props.fileName,
       accountName: props.accountName,
@@ -24,11 +30,11 @@ export default class ContractEditor extends Component {
   componentDidMount() {
     this.state.editor = monaco.editor.create(this.refs.editorContainer, {
       value: this.state.code,
-      language: 'sol',
+      language: (this.props.fileType == 'abi') ? 'json' : 'sol',
       lineNumbers: 'on',
       roundedSelection: false,
       scrollBeyondLastLine: false,
-      readOnly: false,
+      readOnly: this.props.constantContent != null,
       theme: 'vs-dark',
     });
     this.state.editor.onDidBlurEditorWidget(() => {

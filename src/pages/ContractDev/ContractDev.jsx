@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Feedback, Card, Select, Checkbox } from '@icedesign/base';
 import Container from '@icedesign/container';
-import { Input, Button, Tab, Grid, Tree, Dialog, Collapse, Message } from '@alifd/next';
+import { Input, Button, Tab, Grid, Tree, Dialog, Collapse, Message, Icon, Balloon, Shell } from '@alifd/next';
 import * as oexchain from 'oex-web3';
 import * as ethers from 'ethers';
 import * as ethUtil from 'ethereumjs-util';
@@ -17,6 +17,7 @@ import * as utils from '../../utils/utils';
 import * as keystore from '../../utils/keystore';
 import * as txParser from '../../utils/transactionParser';
 import * as sha256 from '../../utils/sha256';
+import * as Notification from '../../utils/notification';
 import { T } from '../../utils/lang';
 import TxSend from "../TxSend";
 import * as Constant from '../../utils/constant';
@@ -185,14 +186,16 @@ const ContractArea = ({ self, contract }) => {
     }
   }
   );
-  return <div>
-          {T('只读类接口:')}<br/>
-          <DisplayOneTypeFuncs self={self} abiInfos={readonlyFuncs} contract={contract}/>
-          <br/>{T('写入类接口:')}<br/>
-          <DisplayOneTypeFuncs self={self} abiInfos={writableFuncs} contract={contract}/>
-          <br/>{T('写入并可支付类接口:')}<br/>
-          <DisplayOneTypeFuncs self={self} abiInfos={writablePayableFuncs} contract={contract}/>
-        </div>
+  return <Shell  style={{ width: '100%', minHeight: '750px' }}>
+          <Shell.Content>
+            {T('只读类接口:')}<br/>
+            <DisplayOneTypeFuncs self={self} abiInfos={readonlyFuncs} contract={contract}/>
+            <br/>{T('写入类接口:')}<br/>
+            <DisplayOneTypeFuncs self={self} abiInfos={writableFuncs} contract={contract}/>
+            <br/>{T('写入并可支付类接口:')}<br/>
+            <DisplayOneTypeFuncs self={self} abiInfos={writablePayableFuncs} contract={contract}/>
+          </Shell.Content>
+        </Shell>
       
 } 
 
@@ -231,6 +234,8 @@ export default class ContractManager extends Component {
       contractFuncInfo: [],
       abiInfos: [],
       contractAccountInfo: [],
+      contractAccountMap: {},
+      accountContractInfoMap: {},
       contractAccountCreateTime: {},
       abiInfo: abiInfoStr,
       paraValue: {},
@@ -302,6 +307,12 @@ export default class ContractManager extends Component {
      const contractAccountInfo = global.localStorage.getItem('contractAccountInfo');
      if (contractAccountInfo != null) {
       this.state.contractAccountInfo = JSON.parse(contractAccountInfo);
+      this.state.contractAccountInfo.map(contractAccountInfo => {
+        if (this.state.contractAccountMap[contractAccountInfo.solFileName + ':' + contractAccountInfo.contractName] == null) {
+          this.state.contractAccountMap[contractAccountInfo.solFileName + ':' + contractAccountInfo.contractName] = contractAccountInfo.contractAccountName;
+          this.state.accountContractInfoMap[contractAccountInfo.contractAccountName] = contractAccountInfo;
+        }
+      });
      }
      
 
@@ -534,13 +545,16 @@ export default class ContractManager extends Component {
       if (!utils.isEmptyObj(contractAbi)) {
         const contractName = this.getContractName(this.state.loadedContractAccount);
         this.displayContractFunc(this.state.loadedContractAccount, 
+                                 'tmpFile-' + utils.getRandomInt(10000),
                                  utils.isEmptyObj(contractName) ? 'tmpName-' + utils.getRandomInt(10000) : contractName , 
                                  contractAbi);
         return;
       } else {
         const bURC20 = await utils.checkURC20(this.state.loadedContractAccount);
         if (bURC20) {
-          this.displayContractFunc(this.state.loadedContractAccount, 'URC20-' + utils.getRandomInt(10000), Constant.URC20ABI);
+          this.displayContractFunc(this.state.loadedContractAccount, 
+                                   'tmpFile-' + utils.getRandomInt(10000),
+                                   'URC20-' + utils.getRandomInt(10000), Constant.URC20ABI);
           return;
         }
       }
@@ -584,11 +598,12 @@ export default class ContractManager extends Component {
   }
 
   compileContract = async () => {
-    if (utils.isEmptyObj(this.state.selectedFileToCompile)) {
+    this.state.selectedFileToCompile = this.state.selectContactFile;
+    if (this.state.selectedFileToCompile.length == 0) {
       Feedback.toast.error(T('请选择待编译的文件'));
       return;
     }
-    this.addLog(T("开始编译"));
+    this.addLog(T("开始编译合约文件：") + this.state.selectedFileToCompile);
     const compileResult = await CompilerSrv.compileSol(this.state.selectedAccountName, this.state.selectedFileToCompile);
     if (compileResult.err != null) {
       Feedback.toast.error(T("编译失败"));
@@ -604,7 +619,8 @@ export default class ContractManager extends Component {
       const compiledInfo = this.state.fileContractMap[contractFile];
       for (var contractName in compiledInfo) {
         this.state.contractList.push(contractFile + ":" + contractName);
-        this.addLog(T("合约 ") + contractName + T(" 编译结果") + '\n' + compiledInfo[contractName].abi);
+        if (contractFile == this.state.selectedFileToCompile)
+          this.addLog(T("合约 ") + contractName + T(" 编译结果") + '\n' + compiledInfo[contractName].abi);
       }
     }
     global.localStorage.setItem("contractList", JSON.stringify(this.state.contractList));
@@ -624,10 +640,12 @@ export default class ContractManager extends Component {
   // 1:创建账户，需：账户名(自动生成), 公钥(同发起账户)，转OEX金额(用于部署合约)
   // 2:将合约bytecode附加到第一步创建的账户中
   deployContract = async () => {
-    if (this.state.selectedContractToDeploy == null) {
-      Feedback.toast.error(T('请选择需要部署的合约'));
+    this.state.selectedContractToDeploy = this.state.selectContactFile;
+    if (this.state.selectedContractToDeploy == null || !this.state.selectedContractToDeploy.endsWith('.bin')) {
+      Feedback.toast.error(T('请选择需要部署的合约bin文件'));
       return;
     }
+    this.state.selectedContractToDeploy = this.state.selectedContractToDeploy.substr(0, this.state.selectedContractToDeploy.length - 4);
     this.state.newContractAccountName = await this.generateContractAccount();
     this.state.newContractPublicKey = this.getAccountPublicKey();
     if (this.state.constructorParaNames.length > 0) {
@@ -929,10 +947,15 @@ export default class ContractManager extends Component {
     console.log('onRightClick', info);
   }
   
+  isDisplayedFile(nodeName) {
+    return nodeName.endsWith('.ui') || nodeName.endsWith('.bin') || nodeName.endsWith('.abi') || nodeName.endsWith('.sol');
+  }
+
   onSelectSolFile = (selectedKeys) => {
     console.log('onSelectSolFile', selectedKeys);
     this.state.selectContactFile = selectedKeys[0];
-    this.addSolTab(this.state.selectContactFile);
+    if (this.isDisplayedFile(selectedKeys[0]))
+      this.addSolTab(this.state.selectContactFile);
   }
   
   addSolFile = () => {
@@ -965,8 +988,9 @@ export default class ContractManager extends Component {
     this.state.password = v;
   }
   onAddNewContractFileOK = () => {
-    if (!this.state.newContractFileName.endsWith('.sol')) {
-      this.state.newContractFileName = this.state.newContractFileName + '.sol';
+    if (this.state.newContractFileName.search(/[:~!@#$%\^&*()<>?,.]/) > -1) {
+      Feedback.toast.error('不可包含特殊字符');
+      return;
     }
     let exist = false;
     this.state.solFileList.map(contractFileName => {
@@ -1262,7 +1286,7 @@ export default class ContractManager extends Component {
         this.checkReceipt(T('部署合约'), txHash, () => {
           Feedback.toast.success(T('成功部署合约'));
           this.setState({deployContractVisible: false, txSendVisible: false});
-          this.processContractDepolyed(this.state.newContractAccountName, contractInfo[1], JSON.parse(contractCode.abi));
+          this.processContractDepolyed(this.state.newContractAccountName, contractInfo[0], contractInfo[1], JSON.parse(contractCode.abi));
         });
       }).catch(error => {
         this.addLog(T('部署合约交易发送失败:') + error);
@@ -1307,7 +1331,7 @@ export default class ContractManager extends Component {
             this.checkReceipt(T('部署合约'), txHash, () => {
               Feedback.toast.success(T('成功部署合约')); 
               this.setState({deployContractVisible: false, txSendVisible: false}); 
-              this.processContractDepolyed(this.state.newContractAccountName, contractInfo[1], JSON.parse(contractCode.abi));
+              this.processContractDepolyed(this.state.newContractAccountName, contractInfo[0], contractInfo[1], JSON.parse(contractCode.abi));
             });
           }).catch(error => {
             this.addLog(T('部署合约交易发送失败:') + error);
@@ -1317,15 +1341,17 @@ export default class ContractManager extends Component {
       });
     }
   }
-  processContractDepolyed = (contractAccountName, contractName, contractAbi) => {
+
+  processContractDepolyed = (contractAccountName, solFileName, contractName, contractAbi) => {
     if (this.checkABI(contractAbi)) {
-      this.displayContractFunc(contractAccountName, contractName, contractAbi);
+      this.displayContractFunc(contractAccountName, solFileName, contractName, contractAbi);
       this.storeContractName(contractAccountName, contractName);
       utils.storeContractABI(contractAccountName, contractAbi);
     }
   }
-  displayContractFunc = (contractAccountName, contractName, contractAbi) => {
-    this.state.contractAccountInfo = [{contractAccountName, contractName, contractAbi, createDate: new Date().toLocaleString()}, ...this.state.contractAccountInfo];
+
+  displayContractFunc = (contractAccountName, solFileName, contractName, contractAbi) => {
+    this.state.contractAccountInfo = [{contractAccountName, solFileName, contractName, contractAbi, createDate: new Date().toLocaleString()}, ...this.state.contractAccountInfo];
     this.setState({contractAccountInfo: this.state.contractAccountInfo, txSendVisible: false});
   }
 
@@ -1343,7 +1369,18 @@ export default class ContractManager extends Component {
       }
     }
   }
-
+  saveSolFile = () => {
+    if (this.state.selectContactFile.length > 0) {
+      const index = this.state.solFileList.indexOf(this.state.selectContactFile);
+      if (index > -1) {
+        const fileName = this.state.selectContactFile;
+        const fileContent = global.localStorage.getItem('sol:' + fileName);
+        utils.doSave(fileContent, 'text/latex', fileName);
+      }
+    } else {
+      Notification.displayWarningInfo('请先选中需保存到本地的合约文件');
+    }
+  }
   onCreateAccountOK = async () => {
     if (this.state.firstAccountName == null) {
       Feedback.toast.error('请输入账户名');
@@ -1463,24 +1500,68 @@ export default class ContractManager extends Component {
   render() {
     global.localStorage.setItem("solFileList", this.state.solFileList);
     const self = this;
+    const addContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.addSolFile.bind(this)}> <Icon size='small' type="add"/> </Button>
+    const delContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.delSolFile.bind(this)}> <Icon size='small' type="ashbin"/> </Button>
+    const saveContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.saveSolFile.bind(this)}> <Icon size='small' type="download"/> </Button>
+    const compileContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.compileContract.bind(this)}> <Icon size='small' type="refresh"/> </Button>
+    const deployContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.deployContract.bind(this)}> <Icon size='small' type="calendar"/> </Button>
+
     return (
       <div sytle={styles.all}>
         <Container style={styles.banner}/>
         <Container style={{ display: 'flex', width: '78%', height: '100%', margin: '-290px 11% 0 11%' }}>
           <Row className="custom-row" >
             <Col fixedSpan="11" className="custom-col-left-sidebar">
-              <Button style={styles.btn} type="primary" onClick={this.addSolFile}>{T('添加合约')}</Button>
-              &nbsp;&nbsp;
-              <Button style={styles.btn} type="primary" onClick={this.delSolFile}>{T('删除选中合约')}</Button>
+              <Row justify='end'>
+                <Balloon trigger={addContractBtn} closable={false}>
+                    {T('添加合约')}
+                </Balloon>
+                <Balloon trigger={delContractBtn} closable={false}>
+                    {T('删除选中合约')}
+                </Balloon>
+                <Balloon trigger={saveContractBtn} closable={false}>
+                    {T('下载合约')}
+                </Balloon>
+                <Balloon trigger={compileContractBtn} closable={false}>
+                    {T('编译合约')}
+                </Balloon>
+                <Balloon trigger={deployContractBtn} closable={false}>
+                    {T('部署合约')}
+                </Balloon>
+              </Row>
               
               <Tree editable showLine draggable selectable
+                  style={{marginTop: '-25px'}}
                   defaultExpandedKeys={['0', '1', '2']}
                   onEditFinish={this.onEditFinish.bind(this)}
                   onRightClick={this.onRightClick}
                   onSelect={this.onSelectSolFile}>
                    <TreeNode key="0" label={T('我的合约')} selectable={false}>
                     {
-                      this.state.solFileList.map(solFile => <TreeNode key={solFile} label={solFile}/>)
+                      this.state.solFileList.map(solFile => {
+                        if (this.state.fileContractMap[solFile] != null) {
+                          const compiledInfo = this.state.fileContractMap[solFile];
+                          const solInfoList = [];
+                          for (var contractName in compiledInfo) {
+                            const key = solFile + ':' + contractName;
+                            var deployedContract = null;
+                            if (this.state.contractAccountMap[key] != null) {
+                              deployedContract = <TreeNode key={this.state.contractAccountMap[key] + '.ui'} label={this.state.contractAccountMap[key] + '.ui'}/>
+                            }
+                            const contractNode = <TreeNode key={key} label={contractName}>
+                              <TreeNode key={solFile + ':' + contractName + '.abi'} label={contractName + '.abi'}/>
+                              <TreeNode key={solFile + ':' + contractName + '.bin'} label={contractName + '.bin'}/>
+                              {deployedContract}
+                            </TreeNode>
+                            solInfoList.push(contractNode);
+                          }
+                          return <TreeNode key={solFile} label={solFile}>
+                                  {[...solInfoList]}
+                                </TreeNode>;
+                        } else {
+                          return <TreeNode key={solFile} label={solFile}/>;
+                        }
+                      })
                     }
                   </TreeNode>
                   
@@ -1500,7 +1581,7 @@ export default class ContractManager extends Component {
               <a href='https://github.com/oexplatform/oexchain/wiki' target="_blank" rel="noopener noreferrer">{T('开发者Wiki')}</a>
             </Col>
             <Col className="custom-col-content">
-              <Row justify='space-between'>
+              {/* <Row justify='space-between'>
                 <div style={styles.selectAndBtn}>
                   <Select language={T('zh-cn')}
                     style={{ width: 200, marginRight: '10px' }}
@@ -1533,10 +1614,6 @@ export default class ContractManager extends Component {
               </Row>
               <Row justify='space-between' style={{marginTop: '10px'}}>
                 <div>
-                  <Button style={styles.btn} type="primary" onClick={this.displayAbi.bind(this)}>{T("查看合约ABI")}</Button>
-                  <Button style={{...styles.btn, marginLeft: '30px'}} type="primary" onClick={this.displayBin.bind(this)}>{T("查看合约BIN")}</Button>
-                </div>
-                <div>
                   <Input hasClear
                     onChange={this.handleLoadedContractAccountChange.bind(this)}
                     value={this.state.loadedContractAccount}
@@ -1546,18 +1623,39 @@ export default class ContractManager extends Component {
                   />
                   <Button style={{...styles.btn, width: '67px', marginLeft: '10px'}} type="primary" onClick={this.loadContract.bind(this)}>{T("加载")}</Button>
                 </div>
-              </Row>
-              <Row>
+              </Row> */}
+              
                 <Tab activeKey={this.state.activeKey} excessMode="slide" onClose={this.onClose.bind(this)} onClick={this.selectTab}>
                   {
-                    this.state.tabFileList.map(fileName =>
-                            <Tab.Item closeable={true} key={fileName} title={fileName} tabStyle={{ height:'15px', backgroundColor: '#000000'}}>
-                              <ContractEditor fileName={fileName} accountName={this.state.selectedAccountName}/>
-                            </Tab.Item>
+                    this.state.tabFileList.map(fileName => {
+                      if (fileName.endsWith('.ui')) {
+                        const accountName = fileName.substr(0, fileName.length - '.ui'.length);
+                        const contractInfo = this.state.accountContractInfoMap[accountName];
+                        return (<Tab.Item closeable={true} key={fileName} title={contractInfo.solFileName + ':' + contractInfo.contractName + '@' + accountName} tabStyle={{ height:'15px', backgroundColor: '#000000'}}>
+                                  <ContractArea self={this} contract={contractInfo}/>
+                              </Tab.Item>);
+                      } else {
+                        var constantContent = null;
+                        var fileType = 'sol';
+                        if (fileName.endsWith('.abi') || fileName.endsWith('.bin')) {
+                          const contractInfo = fileName.split(':');      
+                          const contractName = contractInfo[1].split('.')[0];
+                          const contractCode = this.state.fileContractMap[contractInfo[0]][contractName];
+                          if (contractCode != null) {
+                            constantContent = fileName.endsWith('.abi') ? contractCode.abi : contractCode.bin;
+                            fileType = fileName.endsWith('.abi') ? 'abi' : 'bin';
+                          }
+                        }
+                        return (<Tab.Item closeable={true} key={fileName} title={fileName} tabStyle={{ height:'15px', backgroundColor: '#000000'}}>
+                                <ContractEditor fileType={fileType} fileName={fileName} constantContent={constantContent} accountName={this.state.selectedAccountName}/>
+                              </Tab.Item>);
+                      }
+                    }
+                            
                     )
                   }
                 </Tab>
-              </Row>
+              
               <br/>
               Log
               <Row>
@@ -1618,7 +1716,7 @@ export default class ContractManager extends Component {
           onCancel={this.onAddNewContractFileClose.bind(this)}
           onClose={this.onAddNewContractFileClose.bind(this)}
         >
-          <Input hasClear
+          <Input hasClear autoFocus
             onChange={this.handleContractNameChange.bind(this)}
             style={styles.inputBoder}
             innerBefore={T("合约文件名")}
