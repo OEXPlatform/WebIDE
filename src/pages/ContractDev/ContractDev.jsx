@@ -266,7 +266,7 @@ export default class ContractManager extends Component {
       curTxResult: {},
       resultDetailInfo: '',
       solFileList: ['sample.sol'],
-      tabFileList: ['readme.sol'],
+      tabFileList: ['sample.sol'],
       libFileList: [],
       smapleFileList: [],
       fileContractMap: {},
@@ -995,9 +995,12 @@ export default class ContractManager extends Component {
     this.state.password = v;
   }
   onAddNewContractFileOK = () => {
-    if (this.state.newContractFileName.search(/[:~!@#$%\^&*()<>?,.]/) > -1) {
+    if (this.state.newContractFileName.search(/[:~!@#$%\^&*()<>?,]/) > -1) {
       Feedback.toast.error('不可包含特殊字符');
       return;
+    }
+    if (!this.state.newContractFileName.endsWith('.sol')) {
+      this.state.newContractFileName += '.sol';
     }
     let exist = false;
     this.state.solFileList.map(contractFileName => {
@@ -1540,7 +1543,7 @@ export default class ContractManager extends Component {
                 </Balloon>
               </Row>
               <Tree editable showLine draggable selectable
-                  style={{ marginTop: '-25px' }}
+                  style={{ marginTop: '-25px', marginLeft: '12px' }}
                   defaultExpandedKeys={['0', '1', '2']}
                   onEditFinish={this.onEditFinish.bind(this)}
                   onRightClick={this.onRightClick}
@@ -1893,12 +1896,12 @@ const styles = {
     backgroundColor: '#5c67f2'
   },
   tabStyle: {
-    height:'100%',
-    width: '120px',
+    height:'30px',
     textAlign: 'center',
     borderRadius: 0,
     border: '0px solid #282828',
-    marginRight: 2
+    marginRight: 2,
+    paddingTop: '7px'
   },
   rowStyle: {
     height:'25px',

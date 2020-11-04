@@ -58,9 +58,14 @@
 .next-tree-node-inner:active {
   background: #222;
 }
-// .next-selected > .next-tree-node-label-wrapper > .next-tree-node-label .next-tree-node-label-selectable {
-//   background: #222;
-// }
+
+.next-tree.next-node-indent .next-tree-node-inner.next-selected .next-tree-node-label {
+  background-color: #444;
+}
+
+.next-tree.next-node-indent .next-tree-node-label:hover {
+  background-color: #444;
+}
 
 .next-input {
   width: 100%;
@@ -74,6 +79,13 @@
 }
 
 .next-input.next-input-textarea textarea {
-  background-color: rgb(255, 255, 255);
-  color: #000;
+  background-color: #222;
+  color: #fff;
+  border-radius: 0px;
+  border: '3px solid #111';
+}
+
+.next-shell-light .next-shell-main {
+  background: #222;
+  color: #fff;
 }
