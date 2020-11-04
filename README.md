@@ -1,15 +1,13 @@
-## （注意：本项目已不再维护）
-### oexchain浏览器
-这是一个专门针对oexchain公链的浏览器，包含了本地钱包、开发环境、区块交易查询、矿工管理等功能。
-用户可以使用本浏览器链接oexchain的主网、测试网络、以及自己搭建的测试环境，创建、发送oexchain的各种交易。
+### oexchain网页版IDE
+这是一个专门针对oexchain公链的在线IDE，开发者可以编写、编译、部署和调试基于OEX公链的智能合约，开发自己的DAPP.
 
 
 如何使用（针对程序猿，需要事先安装好git、node和npm/cnpm）
-1. git clone https://github.com/oexplatform/walletBroswer.git
-2. cd broswer
+1. git clone https://github.com/oexplatform/WebIDE.git
+2. cd WebIDE
 3. cnpm i
 4. cnpm run start -- -p 8080
-5. 在浏览器中访问http://localhost:8080, 节点信息设置按钮位于网页右上角处，默认链接本地节点（http://127.0.0.1:8545），同时也有官方公布的主网和测试网节点地址可供选择
+5. 在浏览器中访问http://localhost:8080, 节点信息设置按钮位于网页右上角处，默认链接主网节点，同时也有官方公布的主网和测试网节点地址可供选择
 
 ### 用户使用指南：
 由于oexchain采用了更容易记忆的账号体系来包装难以记忆的公私钥账号，因此在钱包里，我们需要先生成或导入公私钥，然后再生成容易记忆的账号，将公钥同账号绑定后即可使用（如转账、发行资产等操作），具体操作如下：
