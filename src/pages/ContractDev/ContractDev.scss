@@ -9,7 +9,7 @@
   height: 100%;
   //line-height: 130px;
   text-align: left;
-  margin-top: 25px;
+  margin-top: -10px;
   margin-right: 5px;
 }
 
@@ -18,14 +18,14 @@
   height: 100%;
   //line-height: 130px;
   text-align: left;
-  margin-top: 42px;
+  margin-top: 0px;
   margin-left: 5px;
 }
 
 .custom-col-content {
   overflow: hidden;
   width: 100%;
-  margin-top: 20px;
+  margin-top: -10px;
 }
 
 .custom-label {
@@ -39,9 +39,28 @@
 
 .next-tabs.next-medium .next-tabs-tab-inner {
   font-size: 14px;
-  padding: 12px 16px; 
-  color: #000000;
+  padding: 0px 16px; 
+  color: #fff;
 }
+
+.next-tabs-capsule > .next-tabs-bar .next-tabs-tab {
+  background: #444;
+}
+
+.next-tabs-capsule > .next-tabs-bar .next-tabs-tab.active {
+  background: #222;
+}
+
+.next-tree-node-inner:hover {
+  background: #222;
+}
+
+.next-tree-node-inner:active {
+  background: #222;
+}
+// .next-selected > .next-tree-node-label-wrapper > .next-tree-node-label .next-tree-node-label-selectable {
+//   background: #222;
+// }
 
 .next-input {
   width: 100%;

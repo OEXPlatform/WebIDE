@@ -17,13 +17,8 @@ export default class Footer extends PureComponent {
         }}
       >
         <div className="ice-design-layout-footer-body">
-          <div className="logo">
-            <Link to="/" className="logo-text">
-              OEXChain
-            </Link>
-          </div>
           <div className="copyright">
-            © 2019 Theme designed by oex.com
+            © 2019 Theme designed by oexchain.com
           </div>
         </div>
       </Layout.Footer>

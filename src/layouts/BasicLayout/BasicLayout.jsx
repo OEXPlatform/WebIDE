@@ -165,7 +165,7 @@ class BasicLayout extends Component {
                 {item.icon ? (
                   <FoundationSymbol size="small" type={item.icon} />
                 ) : null}
-                <span className="ice-menu-collapse-hide">{T(item.name)}</span>
+                {/* <span className="ice-menu-collapse-hide">{T(item.name)}</span> */}
               </span>
             }
           >
@@ -182,7 +182,7 @@ class BasicLayout extends Component {
               {item.icon ? (
                 <FoundationSymbol size="small" type={item.icon} />
               ) : null}
-              <span className="ice-menu-collapse-hide">{T(item.name)}</span>
+              {/* <span className="ice-menu-collapse-hide">{T(item.name)}</span> */}
             </span>
           </Link>
         </MenuItem>
@@ -263,11 +263,11 @@ class BasicLayout extends Component {
               })}
 
               {/* 首页默认重定向到 /contractDev */}
-              <Redirect exact from="/" to="/dashboard" />
+              <Redirect exact from="/" to="/contractDev" />
             </Switch>
           </Layout.Main>
         </Layout.Section>
-        <Footer />
+        {/* <Footer /> */}
       </Layout>
     );
   }

@@ -1,7 +1,7 @@
 /* eslint-disable react/no-string-refs */
 import React, { Component } from 'react';
 
-import { Button } from '@alifd/next';
+import { Shell } from '@alifd/next';
 import * as monaco from 'monaco-editor';
 import 'monaco-editor/esm/vs/basic-languages/solidity/solidity.contribution.js';
 import 'monaco-editor/esm/vs/editor/contrib/find/findController.js';
@@ -78,7 +78,7 @@ export default class ContractEditor extends Component {
   render() {
     return (
       <div>
-        <div ref="editorContainer" style={{ height: 750 }} />
+        <div ref="editorContainer" style={{ height: this.props.height}}/>
       </div>
     );
   }

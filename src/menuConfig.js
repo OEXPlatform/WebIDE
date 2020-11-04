@@ -5,53 +5,10 @@ import { T } from './utils/lang'
 
 const headerMenuConfig = [
   {
-    name: T('链上数据'),
-    path: '/dashboard',
-    icon: 'search',
-  },
-  {
-    name: T('区块查询'),
-    path: '/Block',
-    icon: 'search',
-  },
-  {
-    name: T('交易查询'),
-    path: '/Transaction',
-    icon: 'search',
-  },
-  {
-    name: T('资产'),
-    path: '/assetOperator',
-    icon: 'ul-list'
-  },
-  {
-    name: T('合约开发工具'),
+    name: T(''),
     path: '/contractDev',
     icon: 'code',
-  },
-  {
-    name: T('节点矿工/投票'),
-    path: '/producerList',
-    icon: 'repair',
-  },
-  // {
-  //   name: T('原始交易构造'),
-  //   path: '/rawTxConstructor',
-  // },
-  // {
-  //   name: T('自动化测试'),
-  //   path: '/autoTest',
-  // },
-  // {
-  //   name: T('应用体验'),
-  //   path: '/dapp',
-  //   icon: 'code',
-  // },
-  // {
-  //   name: T('学习资料'),
-  //   path: '/study',
-  //   icon: 'code',
-  // },
+  }
 ];
 
 const asideMenuConfig = [ 

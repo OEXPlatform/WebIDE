@@ -186,7 +186,7 @@ const ContractArea = ({ self, contract }) => {
     }
   }
   );
-  return <Shell  style={{ width: '100%', minHeight: '750px' }}>
+  return <Shell  style={{ width: '100%', minHeight: window.innerHeight - 200 }}>
           <Shell.Content>
             {T('只读类接口:')}<br/>
             <DisplayOneTypeFuncs self={self} abiInfos={readonlyFuncs} contract={contract}/>
@@ -212,6 +212,12 @@ const ContractCollapse = ({self, contractAccountInfo}) => {
          </Collapse>
 }
 
+function CustomTabItem({ title, closeFunc }) {
+  return (<Row justify='center' style={{color: '#fff'}}>
+              {title}
+              <Button text onClick={() => closeFunc(title)}><Icon size='xs' type='error'/></Button>
+          </Row>);
+}
 
 export default class ContractManager extends Component {
   static displayName = 'ContractManager';
@@ -225,7 +231,6 @@ export default class ContractManager extends Component {
       abiInfoStr = abiInfoStr.substring(1, abiInfoStr.length - 1);
     }
     const abiContractName = cookie.load('abiContractName');
-
     this.state = {
       accountReg: new RegExp('^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{2,16})){0,1}(?:\.([a-z0-9]{2,16})){0,1}$'),
       passwordReg: new RegExp('^([a-zA-Z0-9]{8,20})$'),
@@ -291,6 +296,8 @@ export default class ContractManager extends Component {
       createAccountVisible: false,
       shareCodeContract: {},
       chainConfig: null,
+      collapse: false,
+      width: '250px',
      };
      const solFileList = global.localStorage.getItem('solFileList');
      if (solFileList != null) {
@@ -954,7 +961,7 @@ export default class ContractManager extends Component {
   onSelectSolFile = (selectedKeys) => {
     console.log('onSelectSolFile', selectedKeys);
     this.state.selectContactFile = selectedKeys[0];
-    if (this.isDisplayedFile(selectedKeys[0]))
+    if (this.state.selectContactFile != null && this.isDisplayedFile(selectedKeys[0]))
       this.addSolTab(this.state.selectContactFile);
   }
   
@@ -1497,21 +1504,24 @@ export default class ContractManager extends Component {
   handleDupPasswordChange = (v) => {
     this.state.dupPassword = v;
   }
+
   render() {
     global.localStorage.setItem("solFileList", this.state.solFileList);
     const self = this;
-    const addContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.addSolFile.bind(this)}> <Icon size='small' type="add"/> </Button>
-    const delContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.delSolFile.bind(this)}> <Icon size='small' type="ashbin"/> </Button>
-    const saveContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.saveSolFile.bind(this)}> <Icon size='small' type="download"/> </Button>
-    const compileContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.compileContract.bind(this)}> <Icon size='small' type="refresh"/> </Button>
-    const deployContractBtn = <Button style={{marginRight: '10px'}} text iconSize='xs' onClick={this.deployContract.bind(this)}> <Icon size='small' type="calendar"/> </Button>
+    const addContractBtn = <Button style={styles.icon} text iconSize='xs' onClick={this.addSolFile.bind(this)}> <Icon size='small' type="add"/> </Button>
+    const delContractBtn = <Button style={styles.icon} text iconSize='xs' onClick={this.delSolFile.bind(this)}> <Icon size='small' type="ashbin"/> </Button>
+    const saveContractBtn = <Button style={styles.icon} text iconSize='xs' onClick={this.saveSolFile.bind(this)}> <Icon size='small' type="download"/> </Button>
+    const compileContractBtn = <Button style={styles.icon} text iconSize='xs' onClick={this.compileContract.bind(this)}> <Icon size='small' type="refresh"/> </Button>
+    const deployContractBtn = <Button style={styles.icon} text iconSize='xs' onClick={this.deployContract.bind(this)}> <Icon size='small' type="calendar"/> </Button>
 
     return (
-      <div sytle={styles.all}>
-        <Container style={styles.banner}/>
-        <Container style={{ display: 'flex', width: '78%', height: '100%', margin: '-290px 11% 0 11%' }}>
-          <Row className="custom-row" >
-            <Col fixedSpan="11" className="custom-col-left-sidebar">
+      <Row sytle={styles.all}>
+        {/* <Container style={styles.banner}/> */}
+        {/* <Container style={{ display: 'flex', width: '100%', height: '100%' }}> */}
+          {/* <Shell className={styles.iframeHack} device='desktop' type='dark' style={{border: '1px solid #eee'}}>
+            <Shell.LocalNavigation collapse={this.state.collapse} style={{backgroundColor: '#373738', width: this.state.width}} 
+                                   onCollapseChange={()=> this.setState({collapse: !this.state.collapse, width: this.state.width != 0 ? 0 : 250})}> */}
+            <Col span={4} style={{backgroundColor: '#373738'}}>
               <Row justify='end'>
                 <Balloon trigger={addContractBtn} closable={false}>
                     {T('添加合约')}
@@ -1529,14 +1539,13 @@ export default class ContractManager extends Component {
                     {T('部署合约')}
                 </Balloon>
               </Row>
-              
               <Tree editable showLine draggable selectable
-                  style={{marginTop: '-25px'}}
+                  style={{ marginTop: '-25px' }}
                   defaultExpandedKeys={['0', '1', '2']}
                   onEditFinish={this.onEditFinish.bind(this)}
                   onRightClick={this.onRightClick}
                   onSelect={this.onSelectSolFile}>
-                   <TreeNode key="0" label={T('我的合约')} selectable={false}>
+                   <TreeNode key="0" label={<font color='white'>{T('合约')}</font>} selectable={false}>
                     {
                       this.state.solFileList.map(solFile => {
                         if (this.state.fileContractMap[solFile] != null) {
@@ -1546,92 +1555,45 @@ export default class ContractManager extends Component {
                             const key = solFile + ':' + contractName;
                             var deployedContract = null;
                             if (this.state.contractAccountMap[key] != null) {
-                              deployedContract = <TreeNode key={this.state.contractAccountMap[key] + '.ui'} label={this.state.contractAccountMap[key] + '.ui'}/>
+                              deployedContract = <TreeNode key={this.state.contractAccountMap[key] + '.ui'} label={<font color='white'>{this.state.contractAccountMap[key] + '.ui'}</font>}/>
                             }
-                            const contractNode = <TreeNode key={key} label={contractName}>
-                              <TreeNode key={solFile + ':' + contractName + '.abi'} label={contractName + '.abi'}/>
-                              <TreeNode key={solFile + ':' + contractName + '.bin'} label={contractName + '.bin'}/>
+                            const contractNode = <TreeNode key={key} label={<font color='white'>{contractName}</font>}>
+                              <TreeNode key={solFile + ':' + contractName + '.abi'} label={<font color='white'>{contractName + '.abi'}</font>}/>
+                              <TreeNode key={solFile + ':' + contractName + '.bin'} label={<font color='white'>{contractName + '.bin'}</font>}/>
                               {deployedContract}
                             </TreeNode>
                             solInfoList.push(contractNode);
                           }
-                          return <TreeNode key={solFile} label={solFile}>
+                          return <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}>
                                   {[...solInfoList]}
                                 </TreeNode>;
                         } else {
-                          return <TreeNode key={solFile} label={solFile}/>;
+                          return <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}/>;
                         }
                       })
                     }
                   </TreeNode>
                   
-                  <TreeNode key="1" label={T('公共库(可直接调用)')} selectable={false}>
+                  <TreeNode key="1" label={<font color='white'>{T('示例(仅供参考)')}</font>} selectable={false}>
                     {
-                      this.state.libFileList.map(solFile => <TreeNode key={solFile} label={solFile}/>)
-                    }
-                  </TreeNode>
-                  
-                  <TreeNode key="2" label={T('示例(仅供参考)')} selectable={false}>
-                    {
-                      this.state.smapleFileList.map(solFile => <TreeNode key={solFile} label={solFile}/>)
+                      this.state.smapleFileList.map(solFile => <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}/>)
                     }
                   </TreeNode>
               </Tree>
               &nbsp;&nbsp;
               <a href='https://github.com/oexplatform/oexchain/wiki' target="_blank" rel="noopener noreferrer">{T('开发者Wiki')}</a>
-            </Col>
-            <Col className="custom-col-content">
-              {/* <Row justify='space-between'>
-                <div style={styles.selectAndBtn}>
-                  <Select language={T('zh-cn')}
-                    style={{ width: 200, marginRight: '10px' }}
-                    placeholder={T("发起交易账户")}
-                    onChange={this.onChangeAccount.bind(this)}
-                    dataSource={this.state.accounts}
-                  />
-                  <Button  style={{...styles.btn}} type="primary" onClick={this.copyAccount.bind(this)}>{T("复制")}</Button>
-                </div>
-                <div style={styles.selectAndBtn}>
-                  <Select language={T('zh-cn')}
-                    style={{ width: 200, marginRight: '10px' }}
-                    placeholder={T("请选择待编译文件")}
-                    onChange={this.onChangeContractFile.bind(this)}
-                    value={this.state.selectedFileToCompile}
-                    dataSource={this.state.solFileList}
-                  />
-                  <Button style={styles.btn} type="primary" onClick={this.compileContract.bind(this)}>{T("编译")}</Button>
-                </div>
-                <div style={styles.selectAndBtn}>
-                  <Select language={T('zh-cn')}
-                    style={{ width: 200, marginRight: '10px' }}
-                    placeholder={T("请选择合约")}
-                    onChange={this.onChangeContract.bind(this)}
-                    dataSource={this.state.contractList}
-                    value={this.state.selectedContractToDeploy}
-                  />
-                  <Button style={styles.btn} type="primary" onClick={this.deployContract.bind(this)}>{T("部署")}</Button>
-                </div>
-              </Row>
-              <Row justify='space-between' style={{marginTop: '10px'}}>
-                <div>
-                  <Input hasClear
-                    onChange={this.handleLoadedContractAccountChange.bind(this)}
-                    value={this.state.loadedContractAccount}
-                    style={{ ...styles.inputBoder, width: 200 }}
-                    innerBefore={T("合约账号")}
-                    size="medium"
-                  />
-                  <Button style={{...styles.btn, width: '67px', marginLeft: '10px'}} type="primary" onClick={this.loadContract.bind(this)}>{T("加载")}</Button>
-                </div>
-              </Row> */}
-              
-                <Tab activeKey={this.state.activeKey} excessMode="slide" onClose={this.onClose.bind(this)} onClick={this.selectTab}>
+              </Col>
+            {/* </Shell.LocalNavigation>  } tabRender={(key, props) => <CustomTabItem key={key} {...props} />} 
+            <Shell.Content > */}
+            <Col span={20}>
+              <Row style={{marginTop: 0}}> 
+                <Tab shape='capsule' navStyle={{ background: '#373738' }} activeKey={this.state.activeKey} excessMode="slide" onClose={this.onClose.bind(this)} onClick={this.selectTab}>
                   {
                     this.state.tabFileList.map(fileName => {
                       if (fileName.endsWith('.ui')) {
                         const accountName = fileName.substr(0, fileName.length - '.ui'.length);
                         const contractInfo = this.state.accountContractInfoMap[accountName];
-                        return (<Tab.Item closeable={true} key={fileName} title={contractInfo.solFileName + ':' + contractInfo.contractName + '@' + accountName} tabStyle={{ height:'15px', backgroundColor: '#000000'}}>
+                        return (<Tab.Item closeable={true} key={fileName} title={fileName} style={styles.tabStyle} closeFunc={this.onClose}>
                                   <ContractArea self={this} contract={contractInfo}/>
                               </Tab.Item>);
                       } else {
@@ -1646,55 +1608,28 @@ export default class ContractManager extends Component {
                             fileType = fileName.endsWith('.abi') ? 'abi' : 'bin';
                           }
                         }
-                        return (<Tab.Item closeable={true} key={fileName} title={fileName} tabStyle={{ height:'15px', backgroundColor: '#000000'}}>
-                                <ContractEditor fileType={fileType} fileName={fileName} constantContent={constantContent} accountName={this.state.selectedAccountName}/>
-                              </Tab.Item>);
+                        return (<Tab.Item closeable={true} key={fileName} title={fileName} style={styles.tabStyle} closeFunc={this.onClose}>
+                                  <ContractEditor height={window.innerHeight - 200} fileType={fileType} fileName={fileName} constantContent={constantContent} accountName={this.state.selectedAccountName}/>                                
+                                </Tab.Item>);
                       }
                     }
                             
                     )
                   }
                 </Tab>
-              
-              <br/>
-              Log
-              <Row>
+              </Row>
+              <Row style={{ height: 200, backgroundColor: '#373738' }}>
                 <Input.TextArea hasClear
                   rows={20}
-                  style={{ height: 300 }}
                   value={this.state.resultInfo}
                   size="medium"
                   onChange={this.changeLog.bind(this)}
                 />
               </Row>
-              <Row style={{marginTop: '10px'}}>
-                <Input hasClear
-                  onChange={this.handleContractNoChange.bind(this)}
-                  style={{ ...styles.inputBoder, width: 220, marginRight: '20px' }}
-                  innerBefore={T("编号")}
-                  size="medium"
-                />
-                <Button style={styles.btn} type="primary" onClick={this.removeContractCall.bind(this)}>{T("删除")}</Button>
-              </Row>
-              <Row style={{marginTop: '10px'}}>
-                <ContractCollapse self={self} contractAccountInfo={this.state.contractAccountInfo}/>
-              </Row>
             </Col>
-            {/* <Col fixedSpan="15" className="custom-col-right-sidebar">
-              
-              
-              <br/>
-              {
-                this.state.constructorParaNames.length > 0 ? 
-                <Card style={{ width: '100%', marginBottom: "20px" }} bodyHeight="auto" title={T("构造函数")}>
-                  <Parameters self={this} width='250' contractName={this.state.curContractName} funcName='constructor' 
-                    parameterNames={this.state.constructorParaNames} parameterTypes={this.state.constructorParaTypes} />
-                </Card> : ''
-              }
-             
-            </Col> */}
-        </Row>
-        </Container>
+            {/* </Shell.Content>
+          </Shell> */}
+        
         <Dialog language={T('zh-cn')} style={{width: '400px'}}
           visible={this.state.constructorVisible}
           title={T("构造函数")}
@@ -1906,7 +1841,7 @@ export default class ContractManager extends Component {
           />
         </Dialog>
         <TxSend visible={this.state.txSendVisible} txInfo={this.state.txInfo} accountName={this.state.selectedAccountName} sendResult={this.getTxResult.bind(this)}/>
-      </div>
+      </Row>
     );
   }
 }
@@ -1956,5 +1891,24 @@ const styles = {
     height: '60px',
     borderRadius: '2px',
     backgroundColor: '#5c67f2'
+  },
+  tabStyle: {
+    height:'100%',
+    width: '120px',
+    textAlign: 'center',
+    borderRadius: 0,
+    border: '0px solid #282828',
+    marginRight: 2
+  },
+  rowStyle: {
+    height:'25px',
+    backgroundColor: '#373738'
+  },
+  iframeHack: {
+    width: '100%',
+    height: '100%'
+  },
+  icon: {
+    marginRight: '8px'
   }
 }
