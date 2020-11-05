@@ -28,6 +28,7 @@ import * as CompilerSrv from './CompilerSrv';
 const { Row, Col } = Grid;
 const TreeNode = Tree.Node;
 const Panel = Collapse.Panel;
+const extraHeight = 200 + 30 + 30;  // Log + Head + TabNav
 
 const Transfer = ({self, contractName, funcName}) => {
   return <div>
@@ -186,7 +187,7 @@ const ContractArea = ({ self, contract }) => {
     }
   }
   );
-  return <Shell  style={{ width: '100%', minHeight: window.innerHeight - 200 }}>
+  return <Shell  style={{ width: '100%', minHeight: window.innerHeight - extraHeight }}>
           <Shell.Content>
             {T('只读类接口:')}<br/>
             <DisplayOneTypeFuncs self={self} abiInfos={readonlyFuncs} contract={contract}/>
@@ -1589,7 +1590,7 @@ export default class ContractManager extends Component {
             {/* </Shell.LocalNavigation>  } tabRender={(key, props) => <CustomTabItem key={key} {...props} />} 
             <Shell.Content > */}
             <Col span={20}>
-              <Row style={{marginTop: 0}}> 
+              <Row> 
                 <Tab shape='capsule' navStyle={{ background: '#373738' }} activeKey={this.state.activeKey} excessMode="slide" onClose={this.onClose.bind(this)} onClick={this.selectTab}>
                   {
                     this.state.tabFileList.map(fileName => {
@@ -1612,7 +1613,7 @@ export default class ContractManager extends Component {
                           }
                         }
                         return (<Tab.Item closeable={true} key={fileName} title={fileName} style={styles.tabStyle} closeFunc={this.onClose}>
-                                  <ContractEditor height={window.innerHeight - 200} fileType={fileType} fileName={fileName} constantContent={constantContent} accountName={this.state.selectedAccountName}/>                                
+                                  <ContractEditor height={window.innerHeight - extraHeight} fileType={fileType} fileName={fileName} constantContent={constantContent} accountName={this.state.selectedAccountName}/>                                
                                 </Tab.Item>);
                       }
                     }
