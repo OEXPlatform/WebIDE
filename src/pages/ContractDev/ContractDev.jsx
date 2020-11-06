@@ -1763,7 +1763,7 @@ export default class ContractManager extends Component {
             hasLimitHint
           />
           <br />
-          1Gaoex = 10<sup>-9</sup>oex = 10<sup>9</sup>aoex
+          <font color='#fff'>1Gaoex = 10<sup>-9</sup>oex = 10<sup>9</sup>aoex</font>
           <br />
           <br />
           <Input hasClear hasLimitHint
@@ -1865,10 +1865,7 @@ const styles = {
     alignItems: 'center'
   },
   inputBoder: {
-    borderBottom: '1px solid #dbdbdb',
-    borderTop: '0px',
-    borderLeft: '0px',
-    borderRight: '0px',
+    
   },
   selectBoder: {
     borderBottom: '1px solid #dbdbdb',

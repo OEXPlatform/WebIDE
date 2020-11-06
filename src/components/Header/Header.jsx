@@ -311,7 +311,7 @@ export default class Header extends PureComponent {
             <Input hasClear
               onChange={this.handleAccountNameChange.bind(this)}
               style={{ width: 300 }}
-              addonBefore={T("账号名")}
+              addonBefore={T("账号")}
               size="medium"
               value={this.state.accountName}
               maxLength={32}

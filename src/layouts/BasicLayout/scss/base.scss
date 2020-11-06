@@ -17,22 +17,47 @@ body {
   // border-color: $base-color;
   // color: $base-color;
 }
+.next-dialog {
+  background: #444;
+  border: 0px solid transparent;
+  border-radius: 0px;
+}
+
+.next-dialog .next-dialog-header {
+  padding: 12px 20px 12px 20px;
+  border-bottom: 0 solid rgba(0,0,0,0);
+  border-style: none;
+  font-size: 18px;
+  color: #fff;
+  text-align:center;
+  height: 40px;    
+  background:#222;
+  border-radius:0px;
+}
+
+.next-btn.next-btn-primary {
+  border-radius: '0px';
+  background-color: #222;
+}
+
+.next-input-group.medium .next-input-addon {
+  display: table-cell;
+  height: 28px;
+  padding: 0px 8px;
+  font-size: 14px;
+  line-height: 26px;
+  vertical-align: middle;
+  border-radius: 0px;
+  background-color: #222;
+  border: 0px;
+}
+
 .next-pagination-item.next-current {
   background: $base-color;
 }
 
 .btn:focus {
   background-color: $base-color;
-}
-.next-dialog .next-dialog-header {
-  padding: 12px 20px 12px 20px;
-  border-bottom: 0 solid rgba(0,0,0,0);
-  border-style: none;
-  font-size: 20px;
-  text-align:center;
-  height: 40px;    
-  background:#ffffff;
-  border-radius:8px;
 }
 
 .ice-design-header-aside-footer-layout-#{$theme} {
