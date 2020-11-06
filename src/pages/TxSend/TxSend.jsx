@@ -46,7 +46,7 @@ export default class TxSend extends Component {
     this.state.chainConfig.sysTokenID = 0;
     this.state.indexesList = [];
     oexchain.oex.setChainId(this.state.chainConfig.chainId);
-    this.state.keystoreList = utils.loadKeystoreFromLS();
+    this.state.keystoreList = [utils.getDataFromFile(Constant.KeyStore)];
     oexchain.oex.getSuggestionGasPrice().then(gasPrice => {
       this.setState({ suggestionPrice: utils.getReadableNumber(gasPrice, 9, 9) });
     })

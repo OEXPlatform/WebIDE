@@ -1,7 +1,7 @@
 /* eslint-disable prefer-template */
 /* eslint jsx-a11y/no-noninteractive-element-interactions:0 */
 import React, { PureComponent } from 'react';
-import { Icon, Input, Select, Dialog } from '@icedesign/base';
+import { Icon, Input, Select, Dialog, Feedback } from '@icedesign/base';
 import Layout from '@icedesign/layout';
 import StyledMenu, {
   Item as MenuItem,
@@ -15,11 +15,15 @@ import { createHashHistory } from 'history';
 import cx from 'classnames';
 import { Link } from 'react-router-dom';
 import * as oexchain from 'oex-web3';
+import { ethers } from 'ethers';
+import EthCrypto, { sign } from 'eth-crypto';
+import * as ethUtil from 'ethereumjs-util';
 import { headerMenuConfig } from '../../menuConfig';
 import Logo from '../Logo';
 import * as utils from '../../utils/utils';
 import * as constant from '../../utils/constant';
 import { T, setLang } from '../../utils/lang';
+import eventProxy from '../../utils/eventProxy';
 import styles from './scss/base.scss';
 
 export const history = createHashHistory();
@@ -35,9 +39,14 @@ export default class Header extends PureComponent {
     if (utils.isEmptyObj(nodeInfo)) {
       nodeInfo = constant.mainNetRPCHttpsAddr;
     }
+    const account = utils.getDataFromFile(constant.AccountObj);
     this.state = {
       current: keyMap[props.location.pathname.substr(1)],
       nodeConfigVisible: false,
+      accountConfigVisible: false,
+      accountName: account != null ? account.accountName : '',
+      privateKey: '',
+      password: '',
       nodeInfo,
       chainId: 0,
       customNodeDisabled: true,
@@ -55,6 +64,9 @@ export default class Header extends PureComponent {
     oexchain.oex.getChainConfig().then(chainConfig => {
       this.setState({chainId: chainConfig.chainId});
     })
+    eventProxy.on('importAccountInfo', () => {
+      this.setState({accountConfigVisible: true});
+    });
   }
   
   componentWillReceiveProps(nextProps) {
@@ -85,11 +97,55 @@ export default class Header extends PureComponent {
     const nodeInfo = (this.state.nodeInfo.indexOf('http://') == 0 || this.state.nodeInfo.indexOf('https://') == 0) ? this.state.nodeInfo : 'http://' + this.state.nodeInfo;
     cookie.save('nodeInfo', nodeInfo, {path: '/', maxAge: 3600 * 24 * 360});
     axios.defaults.baseURL = nodeInfo;
-    this.setState({ nodeConfigVisible: false, nodeInfo });
     oexchain.utils.setProvider(nodeInfo);
-    this.state.chainId = oexchain.oex.getChainId();
-    //history.push('/');
-    location.reload(true);
+    oexchain.oex.getChainConfig(chainConfig => {
+      this.state.chainId = chainConfig.chainId;
+      this.setState({ nodeConfigVisible: false, nodeInfo });
+      location.reload(true);
+    });
+  }
+
+  onConfigAcountOK = () => {
+    const { accountName, privateKey, password } = this.state;
+    if (!ethUtil.isValidPrivate(Buffer.from(utils.hex2Bytes(privateKey)))) {
+      Feedback.toast.error(T('无效私钥！'));
+      return;
+    }
+    oexchain.account.getAccountByName(accountName).then(account => {
+      if (account != null) {
+        const accountPublicKey = account['authors'][0]['owner'];
+        var publicKey = EthCrypto.publicKeyByPrivateKey(privateKey);
+        publicKey = utils.getPublicKeyWithPrefix(publicKey);
+        if (accountPublicKey != publicKey) {
+          Feedback.toast.error(T('账号同此私钥不匹配！'));
+          return;
+        }
+        Feedback.toast.success(T('开始导入账户'));
+        let wallet = new ethers.Wallet(privateKey);
+        wallet.encrypt(password, null).then(keystore => {
+          keystore = JSON.parse(keystore);
+          keystore['publicKey'] = publicKey;
+          utils.storeDataToFile(constant.AccountObj, account);
+          utils.storeDataToFile(constant.KeyStore, keystore);
+          Feedback.toast.success(T('成功导入账户'));
+          this.setState({accountConfigVisible: false, privateKey: '', password: ''});
+        }).catch(error => Feedback.toast.error(T('账户导入失败')));
+      } else {
+        Feedback.toast.error(T('账户不存在'));
+      }
+    });
+  }
+
+  handleAccountNameChange = (v) => {
+    this.setState({accountName: v});
+  }
+
+  handlePrivateKeyChange = (v) => {
+    this.setState({privateKey: v});
+  }
+
+  handlePasswordChange = (v) => {
+    this.setState({password: v});
   }
 
   handleClick = e => {
@@ -100,13 +156,14 @@ export default class Header extends PureComponent {
 
   manageAccount = () => {
     this.setState({
-      current: null
+      accountConfigVisible: true
     });
-    history.push('/AccountManager');
+    //history.push('/AccountManager');
   }
 
   render() {
     const defaultTrigger = <Button text type="normal" style={{color: '#808080'}} onClick={this.openSetDialog.bind(this)}><Icon type="set" />{T('设置接入节点')}</Button>;
+    const accountBtnTrigger = <Button text type="normal" style={{color: '#808080', marginLeft: '30px'}} onClick={this.manageAccount.bind(this)}><Icon type="account" />{T('账号管理')}</Button>
     const { isMobile, theme, width, className, style, location } = this.props;  
     const { pathname } = location;
 
@@ -196,7 +253,9 @@ export default class Header extends PureComponent {
             {T('当前连接的节点')}:{this.state.nodeInfo}, ChainId:{this.state.chainId}
           </Balloon>
           &nbsp;&nbsp;
-          <Button text type="normal" style={{color: '#808080', marginLeft: '30px'}} onClick={this.manageAccount.bind(this)}><Icon type="account" />{T('账号管理')}</Button>
+          <Balloon trigger={accountBtnTrigger} closable={false}>
+            {T('当前账号')}:{this.state.accountName == '' ? '尚未导入' : this.state.accountName}
+          </Balloon>
           &nbsp;&nbsp;
           <Button text type="normal" style={{color: '#808080', marginLeft: '30px'}} onClick={this.onChangeLanguage.bind(this)}>{this.state.curLang}</Button>
           {/* &nbsp;&nbsp;
@@ -235,6 +294,49 @@ export default class Header extends PureComponent {
               size="medium"
               defaultValue={this.state.nodeInfo}
               maxLength={150}
+              hasLimitHint
+            />
+          </Dialog>
+
+          <Dialog language={T('zh-cn')}
+            visible={this.state.accountConfigVisible}
+            title={T("账号信息")}
+            footerActions="ok"
+            footerAlign="center"
+            closeable="true"
+            onOk={this.onConfigAcountOK.bind(this)}
+            onCancel={() => this.setState({ accountConfigVisible: false })}
+            onClose={() => this.setState({ accountConfigVisible: false })}
+          >
+            <Input hasClear
+              onChange={this.handleAccountNameChange.bind(this)}
+              style={{ width: 300 }}
+              addonBefore={T("账号名")}
+              size="medium"
+              value={this.state.accountName}
+              maxLength={32}
+              hasLimitHint
+            />
+            <br />
+            <br />
+            <Input hasClear
+              onChange={this.handlePrivateKeyChange.bind(this)}
+              style={{ width: 300 }}
+              addonBefore={T("私钥")}
+              size="medium"
+              defaultValue={this.state.privateKey}
+              maxLength={66}
+              hasLimitHint
+            />
+            <br />
+            <br />
+            <Input htmlType="password" hasClear
+              onChange={this.handlePasswordChange.bind(this)}
+              style={{ width: 300 }}
+              addonBefore={T("密码")}
+              size="medium"
+              defaultValue={this.state.password}
+              maxLength={30}
               hasLimitHint
             />
           </Dialog>

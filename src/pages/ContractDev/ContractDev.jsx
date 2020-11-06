@@ -18,6 +18,7 @@ import * as keystore from '../../utils/keystore';
 import * as txParser from '../../utils/transactionParser';
 import * as sha256 from '../../utils/sha256';
 import * as Notification from '../../utils/notification';
+import eventProxy from '../../utils/eventProxy';
 import { T } from '../../utils/lang';
 import TxSend from "../TxSend";
 import * as Constant from '../../utils/constant';
@@ -293,7 +294,7 @@ export default class ContractManager extends Component {
       keystoreInfo: {},
       suggestionPrice: 1,
       gasLimit: 10000000,
-      ftAmount: 10,      
+      ftAmount: 2,      
       createAccountVisible: false,
       shareCodeContract: {},
       chainConfig: null,
@@ -339,49 +340,51 @@ export default class ContractManager extends Component {
     this.state.chainConfig = await oexchain.oex.getChainConfig();
     oexchain.oex.setChainId(this.state.chainConfig.chainId);
 
-    const keystoreList = utils.loadKeystoreFromLS();
+    const keystore = utils.getDataFromFile(Constant.KeyStore);
+    const keystoreList = keystore == null ? null : [keystore];
     if (keystoreList != null) {
       for (const keystore of keystoreList) {
         this.state.keystoreInfo[keystore.publicKey] = keystore;
       }
     }    
-
-    const accounts = await utils.loadAccountsFromLS();
-    for (let account of accounts) {
-      for (let author of account.authors) {
-        if (this.state.keystoreInfo[author.owner] != null) {
-          this.state.accounts.push({value: account.accountName, label: account.accountName, object: account});
-          break;
+    oexchain.oex.getChainConfig().then(chainConfig => {
+      this.state.selectedAccount = utils.getDataFromFile(Constant.AccountObj);
+      const accounts = [this.state.selectedAccount];
+      for (let account of accounts) {
+        for (let author of account.authors) {
+          if (this.state.keystoreInfo[author.owner] != null) {
+            this.state.accounts.push({value: account.accountName, label: account.accountName, object: account});
+            break;
+          }
         }
       }
-    }
-    
-    let canceled = cookie.load('createFirstAccount');
-    if (this.state.accounts.length > 0) {
-      this.setState({ selectedAccountName: this.state.accounts[0].object.accountName, 
-                      selectedAccount: this.state.accounts[0].object,
-                      txSendVisible: false });
-    } else if (!canceled) {
-      this.state.selectedAccountName = utils.guid();
-      this.state.selectedAccount = null;
-      const chainId = oexchain.oex.getChainId();
-      let netType = '私网';
-      if (chainId == 1) {
-        netType = '主网';
-      } else if (chainId == 100) {
-        netType = '测试网';
+      const accountObj = this.state.selectedAccount;
+      // let canceled = cookie.load('createFirstAccount');
+      if (accountObj != null) {
+        this.setState({ selectedAccountName: accountObj.accountName, 
+                        selectedAccount: accountObj,
+                        txSendVisible: false });
+      } else {
+        this.state.selectedAccountName = utils.guid();
+        const chainId = oexchain.oex.getChainId();
+        let netType = '私网';
+        if (chainId == 1) {
+          netType = '主网';
+        } else if (chainId == 100) {
+          netType = '测试网';
+        }
+        Dialog.confirm({
+          title: '导入' + netType + '账户',
+          content: '只有导入账户后，才能正常使用合约部署和接口调用功能，否则只能编写和编译合约，请问是否需要导入账户？',
+          messageProps:{
+              type: 'warning'
+          },
+          okProps: {children: '导入账户', className: 'unknown'},
+          onOk: () => {eventProxy.trigger('importAccountInfo');},
+          onCancel: () => {}
+        });
       }
-      Dialog.confirm({
-        title: '创建' + netType + '账户',
-        content: '只有创建好账户后，才能正常使用合约部署和接口调用功能，否则只能编写和编译合约，请问需要是否创建账户？',
-        messageProps:{
-            type: 'warning'
-        },
-        okProps: {children: '创建账户', className: 'unknown'},
-        onOk: () => {this.setState({createAccountVisible: true})},
-        onCancel: () => { cookie.save('createFirstAccount', false, {path: '/'});}
-      });
-    }
+    });
     this.syncSolFileToSrv();
     
     const libFiles = await CompilerSrv.getLibSolFile();
@@ -716,7 +719,7 @@ export default class ContractManager extends Component {
       }
       const contractAccount = await oexchain.account.getAccountByName(contractAccountName);
       if (contractAccount == null) {
-        Feedback.toast.error(T('合约不存在，请检查合约名是否输入错误'));
+        Feedback.toast.error(T('合约不存在'));
         return;
       }
       const paraNames = this.state.funcParaNames[contractName][funcName];
@@ -1110,7 +1113,7 @@ export default class ContractManager extends Component {
   sendTx = async (txInfo, fromAccount) => {
     const authors = fromAccount.authors;
     let threshold = fromAccount.threshold;
-    const keystores = utils.getValidKeystores(authors, threshold);
+    const keystores = [utils.getDataFromFile(Constant.KeyStore)];
     if (keystores.length > 0) {
       let multiSigInfos = [];
       let promiseArr = [];
@@ -1296,8 +1299,8 @@ export default class ContractManager extends Component {
         this.addLog(T('部署合约的交易hash:') + txHash);
         this.checkReceipt(T('部署合约'), txHash, () => {
           Feedback.toast.success(T('成功部署合约'));
-          this.setState({deployContractVisible: false, txSendVisible: false});
           this.processContractDepolyed(this.state.newContractAccountName, contractInfo[0], contractInfo[1], JSON.parse(contractCode.abi));
+          this.setState({deployContractVisible: false, txSendVisible: false});
         });
       }).catch(error => {
         this.addLog(T('部署合约交易发送失败:') + error);
@@ -1355,6 +1358,10 @@ export default class ContractManager extends Component {
 
   processContractDepolyed = (contractAccountName, solFileName, contractName, contractAbi) => {
     if (this.checkABI(contractAbi)) {
+
+      this.state.contractAccountMap[solFileName + ':' + contractName] = contractAccountName;
+      this.state.accountContractInfoMap[contractAccountName] = {contractAccountName, solFileName, contractName, contractAbi, createDate: new Date().toLocaleString()};
+      
       this.displayContractFunc(contractAccountName, solFileName, contractName, contractAbi);
       this.storeContractName(contractAccountName, contractName);
       utils.storeContractABI(contractAccountName, contractAbi);
@@ -1363,6 +1370,9 @@ export default class ContractManager extends Component {
 
   displayContractFunc = (contractAccountName, solFileName, contractName, contractAbi) => {
     this.state.contractAccountInfo = [{contractAccountName, solFileName, contractName, contractAbi, createDate: new Date().toLocaleString()}, ...this.state.contractAccountInfo];
+    
+    global.localStorage.setItem('contractAccountInfo', JSON.stringify(this.state.contractAccountInfo));
+    
     this.setState({contractAccountInfo: this.state.contractAccountInfo, txSendVisible: false});
   }
 
@@ -1722,18 +1732,6 @@ export default class ContractManager extends Component {
             innerBefore={T("合约账户名")}
             size="medium"
           />
-          {/* &nbsp;
-          <Checkbox checked
-            onChange={
-              async (checked) => {                  
-                  if (checked) {
-                    const accountName = await this.generateContractAccount();
-                    this.setState({newContractAccountName : accountName});
-                  }
-              }
-          }>
-            {T("自动生成")}
-          </Checkbox> */}
           <br/>
           <br/>
           <Input hasClear
@@ -1743,18 +1741,6 @@ export default class ContractManager extends Component {
             innerBefore={T("公钥")}
             size="medium"
           />
-          {/* &nbsp;
-          <Checkbox checked
-            onChange={
-              (checked) => {                  
-                  if (checked) {
-                    const publicKey = this.getAccountPublicKey();
-                    this.setState({newContractPublicKey : publicKey});
-                  }
-              }
-          }>
-            {T("同发起账户公钥")}
-          </Checkbox> */}
           <br/>
           <br/>
           <Input hasClear

@@ -82,7 +82,13 @@
   background-color: #222;
   color: #fff;
   border-radius: 0px;
-  border: '3px solid #111';
+  border-top: 2px solid #111;
+}
+
+.next-input.next-input-textarea {
+  border: none;
+  resize: none;
+  cursor: pointer;
 }
 
 .next-shell-light .next-shell-main {

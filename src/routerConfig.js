@@ -6,22 +6,10 @@ import { getRouterData } from './utils/utils';
 import { asideMenuConfig } from './menuConfig';
 
 import BasicLayout from './layouts/BasicLayout';
-import AccountManager from './pages/AccountManager';
-import KeystoreManager from './pages/KeystoreManager';
 import ContractDev from './pages/ContractDev';
 
 
 const routerConfig = [
-  {
-    path: '/AccountManager',
-    layout: BasicLayout,
-    component: AccountManager,
-  },
-  {
-    path: '/KeystoreManager',
-    layout: BasicLayout,
-    component: KeystoreManager,
-  },
   {
     path: '/contractDev',
     layout: BasicLayout,

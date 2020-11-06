@@ -28,7 +28,9 @@ export const WITHDRAW_TX_FEE = 1280;
 export const FT_ASSET_ID = 1;
 export const FT_DECIMALS = 18;
 
+export const AccountObj = 'accountObj';
 export const AccountFile = 'accountInfo';
+export const KeyStore = 'keystore';
 export const KeyStoreFile = 'keystoreInfo';
 export const TxInfoFile = 'txInfo';
 export const ContractABIFile = 'contractABI';
