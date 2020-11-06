@@ -494,8 +494,8 @@ const ch2en = {
   '总应出块数': 'total block number',
   '本周期应出块数': 'total block number of current epoch',
   '抵押票数固定为50万OEX': 'please input 500000 OEX',
-  '添加合约': 'Add',
-  '删除选中合约': 'Delete',
+  '添加合约': 'Add Contract',
+  '删除选中合约': 'Delete Contract',
   '我的合约': 'My Contracts',
   '公共库(可直接调用)': 'Public Libs',
   '示例(仅供参考)': 'Sample Code',
@@ -567,7 +567,12 @@ const ch2en = {
   '账户名' : 'Account',
   '资产描述' : 'Asset Description',
   "确定": "OK",
-  "高度/哈希" : "height/hash"
+  "高度/哈希" : "height/hash",
+  "账号信息": "Account Info",
+  "账号名": "Account Name",
+  "当前账号": "Current Account",
+  "下载合约": "Download Contract",
+  "编译合约": "Compile Contract"
   }
 
   let isCh = true;
