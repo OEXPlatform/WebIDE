@@ -1,4 +1,4 @@
-const compileSrvAddr = "http://solCompiler.xchainunion.com";
+const compileSrvAddr = "https://solCompiler.xchainunion.com";
 const chainName = 'oexchain';
 const userFilePath = "/solidity/";
 const libFilePath = "/libsList/?" + chainName;
