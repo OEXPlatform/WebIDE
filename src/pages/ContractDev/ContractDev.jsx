@@ -435,6 +435,7 @@ export default class ContractManager extends Component {
   }
 
   syncSolFileToSrv = () => {
+    CompilerSrv.setChainId(oexchain.oex.getChainId());
     for (const solFile of this.state.solFileList) {
      const solCode = global.localStorage.getItem('sol:' + solFile);
      CompilerSrv.updateSol(this.state.selectedAccountName, solFile, solCode);
@@ -759,67 +760,70 @@ export default class ContractManager extends Component {
           self.setState({ result: self.state.result, txSendVisible: false });
         });
       } else {
-        let assetIds = [0];
-        let amounts = [0];        
-        if (this.state.transferTogether[contractName + funcName]) {
-          assetIds = this.state.paraValue[contractName + '-' + funcName + '-transferAssetId'];
-          amounts = this.state.paraValue[contractName + '-' + funcName + '-transferAssetValue'];      
-          if (utils.isEmptyObj(assetIds) || utils.isEmptyObj(amounts)) {
+        let assetIds = [];
+        let amounts = [];        
+        if (this.state.transferTogether[contractName + funcName]) {   // 携带资产转移
+          var assetIdsInfo = this.state.paraValue[contractName + '-' + funcName + '-transferAssetId'];
+          var amountsInfo = this.state.paraValue[contractName + '-' + funcName + '-transferAssetValue'];      
+          if (utils.isEmptyObj(assetIdsInfo) || utils.isEmptyObj(amountsInfo)) {
             Feedback.toast.error(T('请输入要转移给合约的资产及其金额'));
             return;
           }
-          assetIds = assetIds.trim().split(',');
-          amounts = amounts.trim().split(',');
-          for (let i = 0; i < assetIds.length; i++) {
-            const assetId = assetIds[i].trim();
-            const amount = amounts[i].trim();
+          assetIdsInfo = assetIdsInfo.trim().split(',');
+          amountsInfo = amountsInfo.trim().split(',');
+          for (let i = 0; i < assetIdsInfo.length; i++) {
+            var assetId = assetIdsInfo[i].trim();
+            var amount = amountsInfo[i].trim();
             if (utils.isEmptyObj(assetId) || utils.isEmptyObj(amount)) {
               Feedback.toast.error(T('资产ID和金额不能为空，请检查输入是否正确'));
               return;
             }
+            assetId = parseInt(assetId);
+            amount = parseInt(amount);
             if (assetAmountMap[assetId] != null) {
               Feedback.toast.error(T('输入的资产不可重复，请检查输入'));
               return;
             }
             assetAmountMap[assetId] = amount;
+            assetIds.push(assetId);
+            amounts.push(amount);
           }
         }
+
         let oexAmount = assetAmountMap[this.state.chainConfig.SysTokenId];
         if (!utils.isEmptyObj(oexAmount)) {
           oexAmount = parseInt(oexAmount);
         }
 
         // 如果用户只转一种资产，无论是何种资产，都放到action里
-        // 如果用户转多种资产，当资产中有OEX的时候，将OEX放入action，其它资产放到payload里，
-        //                  否则将所有资产都放入payload里
+        // 如果用户转多种资产，无论是否携带oex，所有资产都放到payload里，action里的资产id和金额必须为0
         let actionAssetId = 0;
         let actionAmount = 0;
         if (assetIds.length == 1) {   // 只转一种币
           actionAssetId = assetIds[0];
-          actionAmount = amounts[0];
+          const assetInfo = await oexchain.account.getAssetInfoById(actionAssetId);
+          actionAmount = new BigNumber(amounts[0]).shiftedBy(assetInfo.decimals).toString(16);
+
+          this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
+            toAccountName: contractAccountName,
+            assetId: actionAssetId,
+            amount: '0x' + actionAmount,
+            payload };
+            
         } else {   // 转多种币
             const extraAssetInfo = [];
-            if (assetAmountMap[this.state.chainConfig.SysTokenId] != null) {  // 带有平台币的情况
-              actionAssetId = this.state.chainConfig.SysTokenId;
-              actionAmount = assetAmountMap[this.state.chainConfig.SysTokenId];
-              assetIds.map((assetId, i) => {
-                if (assetId != this.state.chainConfig.SysTokenId) {
-                  extraAssetInfo.push({assetId, amount: amounts[i]});
-                }
-              });
-            } else {  // 不带平台币的情况
-              assetIds.map((assetId, i) => {
-                extraAssetInfo.push({assetId, amount: amounts[i]});
-              });
-            }
+            assetIds.map((assetId, i) => {
+              extraAssetInfo.push({assetId, amount: amounts[i]});
+            });
             payload = '0x' + encode([...extraAssetInfo, payload]).toString('hex');
+
+            this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
+              toAccountName: contractAccountName,
+              assetId: 0,
+              amount: 0,
+              payload };
         }
         
-        this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
-          toAccountName: contractAccountName,
-          assetId: this.state.chainConfig.SysTokenId,
-          amount: oexAmount,
-          payload };
         this.setState({ txSendVisible: true, curContractName: contractName, curCallFuncName: funcName });
       }
     } catch (error) {

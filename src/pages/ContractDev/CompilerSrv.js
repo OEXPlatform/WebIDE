@@ -1,5 +1,6 @@
-const compileSrvAddr = "https://solCompiler.xchainunion.com";
+const compileSrvAddr = "https://compiler.oexchain.com";
 const chainName = 'oexchain';
+var chainId = 1;
 const userFilePath = "/solidity/";
 const libFilePath = "/libsList/?" + chainName;
 const sampleFilePath = "/sampleCodeList/?" + chainName;
@@ -17,6 +18,10 @@ const  OpSolType = {
 	CompileSol :  5,
 	ListSharedAccount :  6,
 	GetSharedSol :  7,
+}
+
+export function setChainId(_chainId) {
+  chainId = _chainId;
 }
 
 export function changeSrv(compileSrv) {
@@ -40,6 +45,7 @@ export async function getSampleSolFile() {
 export function addSol(accountName, solFileName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.AddSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: solFileName,
@@ -56,6 +62,7 @@ export function addSol(accountName, solFileName) {
 export function delSol(accountName, solFileName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.DelSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: solFileName,
@@ -72,6 +79,7 @@ export function delSol(accountName, solFileName) {
 export function updateSol(accountName, solFileName, solFileContent) {
   const dataToSrv = JSON.stringify({ type: OpSolType.UpdateSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: solFileName,
@@ -88,6 +96,7 @@ export function updateSol(accountName, solFileName, solFileContent) {
 export async function listSol(accountName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.ListSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: "",
@@ -104,6 +113,7 @@ export async function listSol(accountName) {
 export function renameSol(accountName, solFileName, newSolFileName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.RenameSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: solFileName,
@@ -120,6 +130,7 @@ export function renameSol(accountName, solFileName, newSolFileName) {
 export async function compileSol(accountName, solFileName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.CompileSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: '',
     solFileName: solFileName,
@@ -136,6 +147,7 @@ export async function compileSol(accountName, solFileName) {
 export async function listSharedSol(accountName, sharedAccountName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.ListSharedAccount,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: sharedAccountName,
     solFileName: solFileName,
@@ -152,6 +164,7 @@ export async function listSharedSol(accountName, sharedAccountName) {
 export async function getSharedSol(accountName, sharedAccountName, solFileName) {
   const dataToSrv = JSON.stringify({ type: OpSolType.GetSharedSol,
     chainName,
+    chainId,
     accountName: accountName,
     sharedAccountName: sharedAccountName,
     solFileName: solFileName,
