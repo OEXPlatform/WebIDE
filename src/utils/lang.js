@@ -56,6 +56,7 @@ const ch2en = {
   "请选择或输入公钥":"Please select or enter the public key",
   "无效公钥，请重新输入":"Invalid public key, please re-enter",
   "附带转账金额数有误，请重新输入":"The amount of the transfer amount is incorrect. Please re-enter",
+  "输入的资产ID不存在，请检查后输入": "The id of the transferred asset is incorrect. Please re-enter",
   "请输入有效的账号、公钥或地址":"Please enter a valid account number, public key or address",
   "账号不存在":"Account does not exist",
   "请输入权重":"Please enter a weight",

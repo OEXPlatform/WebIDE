@@ -802,6 +802,10 @@ export default class ContractManager extends Component {
         if (assetIds.length == 1) {   // 只转一种币
           actionAssetId = assetIds[0];
           const assetInfo = await oexchain.account.getAssetInfoById(actionAssetId);
+          if (assetInfo == null) {
+            Feedback.toast.error(T('输入的资产ID不存在，请检查后输入'));
+            return;
+          }
           actionAmount = new BigNumber(amounts[0]).shiftedBy(assetInfo.decimals).toString(16);
 
           this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
@@ -812,12 +816,19 @@ export default class ContractManager extends Component {
             
         } else {   // 转多种币
             const extraAssetInfo = [];
-            assetIds.map((assetId, i) => {
-              extraAssetInfo.push({assetId, amount: amounts[i]});
-            });
-            payload = '0x' + encode([...extraAssetInfo, payload]).toString('hex');
+            for (var i = 0; i < assetIds.length; i++) {
+              const assetInfo = await oexchain.account.getAssetInfoById(assetIds[i]);
+              if (assetInfo == null) {
+                Feedback.toast.error(T('输入的资产ID不存在，请检查后输入'));
+                return;
+              }
+              amount = '0x' + new BigNumber(amounts[i]).shiftedBy(assetInfo.decimals).toString(16);
+              extraAssetInfo.push([assetIds[i], amount]);
+            }
+            
+            payload = '0x' + encode([[...extraAssetInfo], payload]).toString('hex');
 
-            this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
+            this.state.txInfo = { actionType: Constant.MULTI_ASSET_CALL,
               toAccountName: contractAccountName,
               assetId: 0,
               amount: 0,
