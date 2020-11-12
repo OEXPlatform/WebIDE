@@ -611,7 +611,7 @@ export default class ContractManager extends Component {
 
   compileContract = async () => {
     this.state.selectedFileToCompile = this.state.selectContactFile;
-    if (this.state.selectedFileToCompile.length == 0) {
+    if (this.state.selectedFileToCompile == null || this.state.selectedFileToCompile.length == 0) {
       Feedback.toast.error(T('请选择待编译的文件'));
       return;
     }
@@ -752,11 +752,11 @@ export default class ContractManager extends Component {
       assetAmountMap[this.state.chainConfig.SysTokenId] = '0';
       let payload = '0x' + oexchain.utils.getContractPayload(funcName, this.state.funcParaTypes[contractName][funcName], values);
       if (this.state.funcParaConstant[contractName][funcName]) {
-        const callInfo = {actionType:0, from: 'oexchain.founder', to: contractAccountName, assetId:0, gas:200000000, gasPrice:10000000000, value:0, data:payload, remark:''};
+        const callInfo = {actionType:0, from: this.state.selectedAccountName, to: contractAccountName, assetId:0, gas:200000000, gasPrice:10000000000, value:0, data:payload, remark:''};
         oexchain.oex.call(callInfo, 'latest').then(resp => {
-          const ret = utils.parseResult(self.state.funcResultOutputs[contractName][funcName], resp);
-          this.addLog("调用函数" + funcName + "获得的结果：" + ret);
-          self.state.result[contractName + funcName] = ret;
+          const ret = (resp == '0x') ? '0x' : utils.parseResult(self.state.funcResultOutputs[contractName][funcName], resp);
+          this.addLog("调用函数" + funcName + "获得的结果：" + JSON.stringify(ret));
+          self.state.result[contractName + funcName] = JSON.stringify(ret);
           self.setState({ result: self.state.result, txSendVisible: false });
         });
       } else {
@@ -1574,7 +1574,7 @@ export default class ContractManager extends Component {
                   onEditFinish={this.onEditFinish.bind(this)}
                   onRightClick={this.onRightClick}
                   onSelect={this.onSelectSolFile}>
-                   <TreeNode key="0" label={<font color='white'>{T('合约')}</font>} selectable={false}>
+                   <TreeNode key="0" label={T('合约')} selectable={false}>
                     {
                       this.state.solFileList.map(solFile => {
                         if (this.state.fileContractMap[solFile] != null) {
@@ -1584,20 +1584,20 @@ export default class ContractManager extends Component {
                             const key = solFile + ':' + contractName;
                             var deployedContract = null;
                             if (this.state.contractAccountMap[key] != null) {
-                              deployedContract = <TreeNode key={this.state.contractAccountMap[key] + '.ui'} label={<font color='white'>{this.state.contractAccountMap[key] + '.ui'}</font>}/>
+                              deployedContract = <TreeNode key={this.state.contractAccountMap[key] + '.ui'} label={this.state.contractAccountMap[key] + '.ui'}/>
                             }
                             const contractNode = <TreeNode key={key} label={<font color='white'>{contractName}</font>}>
-                              <TreeNode key={solFile + ':' + contractName + '.abi'} label={<font color='white'>{contractName + '.abi'}</font>}/>
-                              <TreeNode key={solFile + ':' + contractName + '.bin'} label={<font color='white'>{contractName + '.bin'}</font>}/>
+                              <TreeNode key={solFile + ':' + contractName + '.abi'} label={contractName + '.abi'}/>
+                              <TreeNode key={solFile + ':' + contractName + '.bin'} label={contractName + '.bin'}/>
                               {deployedContract}
                             </TreeNode>
                             solInfoList.push(contractNode);
                           }
-                          return <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}>
+                          return <TreeNode key={solFile} label={solFile}>
                                   {[...solInfoList]}
                                 </TreeNode>;
                         } else {
-                          return <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}/>;
+                          return <TreeNode key={solFile} label={solFile}/>;
                         }
                       })
                     }
@@ -1605,7 +1605,7 @@ export default class ContractManager extends Component {
                   
                   <TreeNode key="1" label={<font color='white'>{T('示例(仅供参考)')}</font>} selectable={false}>
                     {
-                      this.state.smapleFileList.map(solFile => <TreeNode key={solFile} label={<font color='white'>{solFile}</font>}/>)
+                      this.state.smapleFileList.map(solFile => <TreeNode key={solFile} label={solFile}/>)
                     }
                   </TreeNode>
               </Tree>

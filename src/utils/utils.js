@@ -524,14 +524,26 @@ function parseResult(outputs, bytes) {
           decodedValue = null;
         }
 
-        //returnValues[i] = decodedValue;
+        if (output.type.indexOf('int') > -1) {
+          if (Array.isArray(decodedValue)) {
+            const values = decodedValue.map(value =>new BigNumber(value).toNumber());
+            decodedValue = values;
+          } else {
+            decodedValue = new BigNumber(decodedValue).toNumber();
+          }
+        }
 
-        if (isObject(output) && output.name) {
+        if (isObject(output)) {
+          if (isEmptyObj(output.name)) output.name = '返回参数' + i;
           returnValues[output.name] = decodedValue;
         }
       });
 
       return returnValues;
+    } else {
+      if (outputs[0].type.indexOf('int') > -1) {
+        return result[0].toNumber();
+      }
     }
 
     return result;
