@@ -631,8 +631,8 @@ export default class ContractManager extends Component {
       const compiledInfo = this.state.fileContractMap[contractFile];
       for (var contractName in compiledInfo) {
         this.state.contractList.push(contractFile + ":" + contractName);
-        if (contractFile == this.state.selectedFileToCompile)
-          this.addLog(T("合约 ") + contractName + T(" 编译结果") + '\n' + compiledInfo[contractName].abi);
+        // if (contractFile == this.state.selectedFileToCompile)
+        //   this.addLog(T("合约 ") + contractName + T(" 编译结果") + '\n' + compiledInfo[contractName].abi);
       }
     }
     global.localStorage.setItem("contractList", JSON.stringify(this.state.contractList));
@@ -668,7 +668,7 @@ export default class ContractManager extends Component {
   }
 
   onConstructOK = () => {
-    this.setState({deployContractVisible: true, txSendVisible: false});
+    this.setState({deployContractVisible: true, constructorVisible: false, txSendVisible: false});
   }
 
   displayAbi = () => {
@@ -980,8 +980,13 @@ export default class ContractManager extends Component {
   onSelectSolFile = (selectedKeys) => {
     console.log('onSelectSolFile', selectedKeys);
     this.state.selectContactFile = selectedKeys[0];
-    if (this.state.selectContactFile != null && this.isDisplayedFile(selectedKeys[0]))
+    if (this.state.selectContactFile != null && this.isDisplayedFile(selectedKeys[0])) {
       this.addSolTab(this.state.selectContactFile);
+    }
+    if (this.state.selectContactFile.endsWith('.bin')) {
+      const selectContactFile = this.state.selectContactFile.substr(0, this.state.selectContactFile.length - 4);
+      this.onChangeContract(selectContactFile);
+    }
   }
   
   addSolFile = () => {
@@ -1145,7 +1150,7 @@ export default class ContractManager extends Component {
       const actionName = txParser.getActionTypeStr(txInfo.actions[0].actionType);
       if (multiSigInfos.length > 0) {   
         Feedback.toast.success(fromAccount.accountName + '开始发送交易:' + actionName);   
-        this.addLog(fromAccount.accountName + '开始发送交易:' + actionName + ', 交易详情:' + JSON.stringify(txInfo));    
+        this.addLog(fromAccount.accountName + '开始发送交易:' + actionName);// + ', 交易详情:' + JSON.stringify(txInfo));    
         const fatherLevel = 0;
         return oexchain.oex.sendSeniorSigTransaction(txInfo, multiSigInfos, fatherLevel);
         
