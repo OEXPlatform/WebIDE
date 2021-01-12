@@ -799,7 +799,13 @@ export default class ContractManager extends Component {
         // 如果用户转多种资产，无论是否携带oex，所有资产都放到payload里，action里的资产id和金额必须为0
         let actionAssetId = 0;
         let actionAmount = 0;
-        if (assetIds.length == 1) {   // 只转一种币
+        if (assetIds.length == 0) {
+          this.state.txInfo = { actionType: Constant.CALL_CONTRACT,
+            toAccountName: contractAccountName,
+            assetId: actionAssetId,
+            amount: actionAmount,
+            payload };
+        } else if (assetIds.length == 1) {   // 只转一种币
           actionAssetId = assetIds[0];
           const assetInfo = await oexchain.account.getAssetInfoById(actionAssetId);
           if (assetInfo == null) {
